@@ -1,7 +1,12 @@
 # FuncMorph
 
 ## Work in progress!
+## Dependencies
+- [IHaskell](https://github.com/gibiansky/IHaskell)  (optional -- brings Haskell to Jupyter Notebooks)
+- [Diagrams](https://archives.haskell.org/projects.haskell.org/diagrams/)
+- [Cairo](http://hackage.haskell.org/package/cairo)
 
+## Examples
 ```Haskell
 draw $ map (squiggly 3 10) (stdn 100)
 ``` 
