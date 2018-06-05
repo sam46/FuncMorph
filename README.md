@@ -1,5 +1,7 @@
 # FuncMorph
 
+## Work in progress!
+
 ```Haskell
 draw $ map (squiggly 3 10) (stdn 100)
 ``` 
