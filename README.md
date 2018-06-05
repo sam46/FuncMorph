@@ -1,6 +1,6 @@
 # FuncMorph
 
-You can create fancy looking things and linearly interpolate between them to make animations and gifs.. like you're directing a movie (not that I know what it's like XD)
+You can create fancy looking things and linearly interpolate between them to make animations and gifs.. like you're directing a movie (not that I know what it's like XD)  
 And, because this is haskell, everything is a one-liner!
 
 ## Work in progress!
