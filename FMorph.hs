@@ -6,8 +6,9 @@ module FMorph (
         fmWidth, fmHeight, nPts, fmRad,
         linspace, lerpScaler, lerpPts, 
         rotatePts, squarify, randPts, 
-        squigglify, fuzzify,
-        draw, play
+        squiggly, squigglify, fuzzify, 
+        project2D, scalePts, singlePoint,
+        draw, drawShape, play
     ) where 
 
 import Data.Active
@@ -19,20 +20,23 @@ import System.Random
 
 
 --- Constants ---
-nPts :: Int
 nPts = 100
 fmWidth = 100.0
 fmHeight = 100.0
-singlePoint = circle 1 # fc black
+singlePoint = circle 0.9 # fc black
 baseSpeed = 0.3
 fmRad = 100
 
 
 --- Transformations and effects ---
+scalePts r points = map (unr2.(*r).r2) points
+project2D scalars = zip scalars $ repeat 0.0
+
+
 linspace num = map (/num) [0..num]
 -- std = linspace nPts
 
-lerpScaler x a b c d      = fst $ unr2 $ 
+lerpScaler x a b c d        = fst $ unr2 $ 
                                 lerp ((x - a)/(b - a)) (r2 (d,0)) (r2 (c,0))
 lerpPts amt points1 points2 = map unr2 $ 
                                 zipWith (lerp amt) (map r2 points2) (map r2 points1)
@@ -51,6 +55,8 @@ squigglify' num amp x = (rad'*cos(2*pi*x), rad'*sin(2*pi*x))
     where   rad' = fmRad + amp*(cos(num*ang)) -- radius dependent on angle
             ang = 2*pi*x
 squigglify num amp points = map (squigglify' num amp) points
+squiggly   num amp numPts = squigglify num amp $ 
+                                        project2D $ linspace numPts
 
 randScalars n rgen = take n $ randomRs (0,1) rgen :: [Double]
 randPts     n rgen = zip (take n $ randScalars (2*n::Int) rgen) 
@@ -66,7 +72,9 @@ lerpShots   t (shotx, shoty) = draw $ lerpPts t shotx shoty
 mkScene speed shotPair = ((pure $ (flip lerpShots) shotPair) <*> stretch (baseSpeed*speed) ui)
                                :: Animation B V2 Double
 
-draw  points = atPoints (map p2 points) $ repeat singlePoint
+
+drawShape ptShape points  = atPoints (map p2 points) $ repeat ptShape
+draw = drawShape singlePoint
 
 getShots  xs = map fst xs
 getSpeeds xs = map snd xs
