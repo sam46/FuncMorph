@@ -44,3 +44,7 @@ play [(shot3,2), (shot4,2), (shot5,2), (shot5,2), (shot6,2), (shot7,2)]
 ``` 
 ![anim.gif](https://github.com/sam46/FuncMorph/blob/master/gallery/anim.gif)
 
+
+#### Like what you see? 
+Pythonistas can check out a [similar work in Python](https://github.com/sam46/Morph)
+
