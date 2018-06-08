@@ -3,7 +3,7 @@
 You can create fancy looking things and linearly interpolate between them to make animations and gifs.. like you're directing a movie (not that I know what it's like XD)  
 And, because this is haskell, everything is a one-liner!
 
-## Work in progress! Contributions are welcome!
+#### Work in progress! Contributions are welcome!
 ## Dependencies
 - [IHaskell](https://github.com/gibiansky/IHaskell)  (optional -- brings Haskell to Jupyter Notebooks)
 - [Diagrams](https://archives.haskell.org/projects.haskell.org/diagrams/)
