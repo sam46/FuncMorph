@@ -3,8 +3,7 @@
 {-# LANGUAGE TypeFamilies              #-}
 
 module FMorph (
-        fmWidth, fmHeight, nPts, fmRad,
-        linspace, lerpScaler, lerpPts, 
+        linspace, remap, lerpPts, 
         rotatePts, squarify, randPts, 
         squiggly, squigglify, fuzzify, 
         project2D, scalePts, singlePoint,
@@ -20,12 +19,8 @@ import System.Random
 
 
 --- Constants ---
-nPts = 100
-fmWidth = 100.0
-fmHeight = 100.0
 singlePoint = circle 0.9 # fc black
 baseSpeed = 0.3
-fmRad = 100
 
 
 --- Transformations and effects ---
@@ -34,28 +29,28 @@ project2D scalars = zip scalars $ repeat 0.0
 
 
 linspace num = map (/num) [0..num]
--- std = linspace nPts
 
-lerpScaler x a b c d        = fst $ unr2 $ 
+remap x a b c d     = fst $ unr2 $ 
                                 lerp ((x - a)/(b - a)) (r2 (d,0)) (r2 (c,0))
 lerpPts amt points1 points2 = map unr2 $ 
                                 zipWith (lerp amt) (map r2 points2) (map r2 points1)
 
+
 rotate'   ang (x,y)  = ((cos ang)*x - (sin ang)*y, (sin ang)*x + (cos ang)*y)
 rotatePts ang points = map (rotate' ang) points
 
-foo small' big' = ((lerpScaler (abs small') (-c') c' (-side) side) * signum small', 
+foo small' big' = ((remap (abs small') (-c') c' (-side) side) * signum small', 
                    side * signum big')
     where   c' = 100*(cos (pi/4.0))
             side = 100
 squarify'(x,y)  =  if abs x < abs y then foo x y else swap $ foo y x
 squarify points = map squarify' points
 
-squigglify' num amp x = (rad'*cos(2*pi*x), rad'*sin(2*pi*x))
-    where   rad' = fmRad + amp*(cos(num*ang)) -- radius dependent on angle
-            ang = 2*pi*x
-squigglify num amp points = map (squigglify' num amp) points
-squiggly   num amp numPts = squigglify num amp $ 
+squigglify' rad' nSquiggles amp x = (radS*cos(2*pi*x), radS*sin(2*pi*x))
+    where   radS = rad' + amp*(cos(nSquiggles*ang)) -- radius dependent on angle
+            ang   = 2*pi*x
+squigglify rad' nSquiggles amp points = map (squigglify' rad' nSquiggles amp) points
+squiggly   rad' nSquiggles amp numPts = squigglify rad' nSquiggles amp $ 
                                         project2D $ linspace numPts
 
 randScalars n rgen = take n $ randomRs (0,1) rgen :: [Double]
