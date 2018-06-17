@@ -5,7 +5,7 @@ And, because this is haskell, everything is a one-liner!
 
 #### Work in progress! Contributions are welcome!
 ## Dependencies
-- [IHaskell](https://github.com/gibiansky/IHaskell)  (optional -- brings Haskell to Jupyter Notebooks)
+- [IHaskell](https://github.com/gibiansky/IHaskell)  (optional -- brings Jupyter Notebooks to Haskell)
 - [Diagrams](https://archives.haskell.org/projects.haskell.org/diagrams/)
 - [Cairo](http://hackage.haskell.org/package/cairo)
 
