@@ -1,12 +1,16 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}  
+
 
 module FMorph (
         linspace, remap, lerpPts, 
         rotatePts, squarify, randPts, 
         squiggly, squigglify, fuzzify, 
         project2D, scalePts, singlePoint,
+        project3D, rotateX, rotateY, rotateZ,
         draw, drawShape, play
     ) where 
 
@@ -19,15 +23,16 @@ import System.Random
 
 
 --- Constants ---
-singlePoint = circle 0.9 # fc black
+singlePoint = circle 0.9 # fc red
 baseSpeed = 0.3
 
 
 --- Transformations and effects ---
 scalePts r points = map (unr2.(*r).r2) points
 project2D scalars = zip scalars $ repeat 0.0
+project3D points  = map (\(a, b)-> (a, b, 0.0)) points
 
-
+linspace num = map (/num) [0..num]
 linspace num = map (/num) [0..num]
 
 remap x a b c d     = fst $ unr2 $ 
@@ -38,6 +43,13 @@ lerpPts amt points1 points2 = map unr2 $
 
 rotate'   ang (x,y)  = ((cos ang)*x - (sin ang)*y, (sin ang)*x + (cos ang)*y)
 rotatePts ang points = map (rotate' ang) points
+rotateX   ang points = map (\(x,y,z)-> let (ry,rz) = rotate' ang (y,z) 
+                                        in (x,ry,rz)) points
+rotateY   ang points = map (\(x,y,z)-> let (rx,rz) = rotate' ang (x,z) 
+                                        in (rx,y,rz)) points
+rotateZ   ang points = map (\(x,y,z)-> let (ry,rx) = rotate' ang (y,x) 
+                                        in (rx,ry,z)) points
+
 
 foo small' big' = ((remap (abs small') (-c') c' (-side) side) * signum small', 
                    side * signum big')
@@ -51,7 +63,7 @@ squigglify' rad' nSquiggles amp x = (radS*cos(2*pi*x), radS*sin(2*pi*x))
             ang   = 2*pi*x
 squigglify rad' nSquiggles amp points = map (squigglify' rad' nSquiggles amp) points
 squiggly   rad' nSquiggles amp numPts = squigglify rad' nSquiggles amp $ 
-                                        project2D $ linspace numPts
+                                        linspace numPts
 
 randScalars n rgen = take n $ randomRs (0,1) rgen :: [Double]
 randPts     n rgen = zip (take n $ randScalars (2*n::Int) rgen) 
@@ -63,13 +75,21 @@ fuzzify  xamp yamp rgen  points  = fuzzifyR xamp yamp (randPts (length points) r
 
 
 ---   ---
-lerpShots   t (shotx, shoty) = draw $ lerpPts t shotx shoty
+lerpShots   t (shotx, shoty) = draw $ lerpPts t (map twoDim shotx) (map twoDim shoty)
 mkScene speed shotPair = ((pure $ (flip lerpShots) shotPair) <*> stretch (baseSpeed*speed) ui)
                                :: Animation B V2 Double
 
+class TwoDim a b where
+    twoDim :: a b -> (b, b)
+
+instance TwoDim ((,) a) a where
+    twoDim = id
+
+instance TwoDim ((,,) a a) a where
+    twoDim (x, y, _) = (x, y) 
 
 drawShape ptShape points  = atPoints (map p2 points) $ repeat ptShape
-draw = drawShape singlePoint
+draw                      = drawShape singlePoint . map twoDim
 
 getShots  xs = map fst xs
 getSpeeds xs = map snd xs
