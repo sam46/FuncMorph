@@ -11,6 +11,7 @@ module FMorph (
         squiggly, squigglify, fuzzify, 
         project2D, scalePts, singlePoint,
         project3D, rotateX, rotateY, rotateZ,
+        kock, 
         draw, drawShape, play
     ) where 
 
