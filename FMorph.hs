@@ -11,7 +11,8 @@ module FMorph (
         squiggly, squigglify, fuzzify, 
         project2D, scalePts, singlePoint,
         project3D, rotateX, rotateY, rotateZ,
-        kock, samplePts,
+        kock, regularKock, regular, polar,
+        samplePts,
         draw, drawShape, play
     ) where 
 
@@ -25,12 +26,14 @@ import System.Random.Shuffle
 import Data.List (sort)
 
 
---- Constants ---
+---- Constants ----
 singlePoint = circle 0.9 # fc red
 baseSpeed = 0.3
 
 
---- Transformations and effects ---
+---- Transformations and effects ----
+
+-- sample a list (stable, i.e. order is preserved)
 samplePts points n rgen = map (points !!) (sort $ take n shuff)
         where shuff = (shuffle' [0..length points -1] (length points) rgen)
 
@@ -41,7 +44,7 @@ project3D points  = map (\(a, b)-> (a, b, 0.0)) points
 linspace num = map (/num) [0..num]
 linspace num = map (/num) [0..num]
 
-remap x a b c d     = fst $ unr2 $ 
+remap x a b c d             = fst $ unr2 $ 
                                 lerp ((x - a)/(b - a)) (r2 (d,0)) (r2 (c,0))
 lerpPts amt points1 points2 = map unr2 $ 
                                 zipWith (lerp amt) (map r2 points2) (map r2 points1)
@@ -80,7 +83,11 @@ fuzzifyR xamp yamp rands points  = zipWith (fuzzify' xamp yamp) points rands
 fuzzify  xamp yamp rgen  points  = fuzzifyR xamp yamp (randPts (length points) rgen) points 
 
 kock' :: (Floating a) => V2 a -> V2 a -> Int -> a -> [V2 a]
--- Note : length (kock' _ _ n _) == 5 * (4**n) 
+-- kock fractal given two pivot points (line-segment) and number of iterations (levels).
+-- length of list is dependent on n: length (kock' _ _ n _) == 5 * (4**n) 
+-- v1, v2: segment endpoints
+-- n: iterations (levels)
+-- tipLen: how far the tips pop out
 kock' v1 v2 n tipLen =
     let  v12   = v2 - v1
          v12'  = v1 + v12 / 3 
@@ -88,16 +95,35 @@ kock' v1 v2 n tipLen =
          tip   = (v1 + v2) / 2 + (perp v12) ^* (tipLen / norm v12) in 
     if (n < 0) then [] 
     else if (n==0) then [v1, v12', tip, v12'', v2] 
-    else (kock' v1    v12'  (n-1) (tipLen*0.2)) ++
+    else (kock' v1    v12'  (n-1) (tipLen*0.2)) ++  
          (kock' v12'  tip   (n-1) (tipLen*0.2)) ++
          (kock' tip   v12'' (n-1) (tipLen*0.2)) ++
          (kock' v12'' v2    (n-1) (tipLen*0.2)) 
-kock pt1 pt2 nPts tipLen rgen = samplePts kockPts nPts rgen
+
+-- kock fractal given two pivot points (line-segment). 
+-- Sampled to only use nPts points: i.e. length (kock' _ _ nPts _ _) == nPts
+kock pt1 pt2 tipLen nPts rgen = samplePts kockPts nPts rgen
     where nPts'   = ceiling $ log ((fromIntegral nPts)/5) / log 4 
           toPair  = \v -> (v ^. _x, v ^. _y)
           kockPts = map toPair $ kock' (uncurry V2 pt1) (uncurry V2 pt2) nPts' tipLen
 
----   ---
+-- regular polygon with sides replaced with kock fractals
+-- Sampled to only use nPts points: i.e. length (regularKock _ nPts _ _ _) == nPts
+regularKock n nPts tipLen rad' rgen = 
+    concatMap (\(v1, v2) -> 
+        kock v2 v1 tipLen (ceiling $ (fromIntegral nPts) / (fromIntegral n)) rgen
+        ) segments
+    where regVerts = scalePts rad' $ regular n
+          segments = zip regVerts (tail regVerts ++ [head regVerts])  
+
+-- point on a unit circle given an angle
+polar   t  = (cos t, sin t)
+
+-- equaly sperated points on a unit circle
+regular n  = take n $ map polar [0, tau / fromIntegral n .. ]
+
+          
+---- Animation/Drawing  ----
 lerpShots   t (shotx, shoty) = draw $ lerpPts t (map twoDim shotx) (map twoDim shoty)
 mkScene speed shotPair = ((pure $ (flip lerpShots) shotPair) <*> stretch (baseSpeed*speed) ui)
                                :: Animation B V2 Double
@@ -111,12 +137,17 @@ instance TwoDim ((,) a) a where
 instance TwoDim ((,,) a a) a where
     twoDim (x, y, _) = (x, y) 
 
+
+-- make a Digaram from a shot where a shot is a list of points (i.e. [(x,y)] or [(x,y,z)]) 
 drawShape ptShape points  = atPoints (map p2 points) $ repeat ptShape
 draw                      = drawShape singlePoint . map twoDim
 
 getShots  xs = map fst xs
 getSpeeds xs = map snd xs
 
+-- make an animation given [(shot,time)] 
+-- where shot is a list of points (i.e. [(x,y)] or [(x,y,z)]) 
+-- and time is a Num
 play      xs = movie $ zipWith ($)
             (map mkScene $ getSpeeds $ init xs)
             $ zip (getShots $ init xs) (getShots $ tail xs)
