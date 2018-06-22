@@ -11,7 +11,7 @@ module FMorph (
         squiggly, squigglify, fuzzify, 
         project2D, scalePts, singlePoint,
         project3D, rotateX, rotateY, rotateZ,
-        kock, 
+        kock, samplePts,
         draw, drawShape, play
     ) where 
 
@@ -21,6 +21,8 @@ import Diagrams.Backend.Cairo
 import Diagrams.Animation
 import Data.Tuple
 import System.Random
+import System.Random.Shuffle
+import Data.List (sort)
 
 
 --- Constants ---
@@ -29,6 +31,9 @@ baseSpeed = 0.3
 
 
 --- Transformations and effects ---
+samplePts points n rgen = map (points !!) (sort $ take n shuff)
+        where shuff = (shuffle' [0..length points -1] (length points) rgen)
+
 scalePts r points = map (unr2.(*r).r2) points
 project2D scalars = zip scalars $ repeat 0.0
 project3D points  = map (\(a, b)-> (a, b, 0.0)) points
@@ -76,20 +81,21 @@ fuzzify  xamp yamp rgen  points  = fuzzifyR xamp yamp (randPts (length points) r
 
 kock' :: (Floating a) => V2 a -> V2 a -> Int -> a -> [V2 a]
 -- Note : length (kock' _ _ n _) == 5 * (4**n) 
-kock' v1 v2 n tipL =
+kock' v1 v2 n tipLen =
     let  v12   = v2 - v1
          v12'  = v1 + v12 / 3 
          v12'' = v1 + 2 * v12 / 3 
-         tip   = (v1 + v2) / 2 + (perp v12) ^* (tipL / norm v12) in 
+         tip   = (v1 + v2) / 2 + (perp v12) ^* (tipLen / norm v12) in 
     if (n < 0) then [] 
     else if (n==0) then [v1, v12', tip, v12'', v2] 
-    else (kock' v1    v12'  (n-1) (tipL*0.2)) ++
-         (kock' v12'  tip   (n-1) (tipL*0.2)) ++
-         (kock' tip   v12'' (n-1) (tipL*0.2)) ++
-         (kock' v12'' v2    (n-1) (tipL*0.2)) 
-kock pt1 pt2 nPts tipL = map toPair $ kock' (uncurry V2 pt1) (uncurry V2 pt2) nPts' tipL
-    where nPts' = floor $ log (nPts/5) / log 4 
-          toPair = \v -> (v ^. _x, v ^. _y)
+    else (kock' v1    v12'  (n-1) (tipLen*0.2)) ++
+         (kock' v12'  tip   (n-1) (tipLen*0.2)) ++
+         (kock' tip   v12'' (n-1) (tipLen*0.2)) ++
+         (kock' v12'' v2    (n-1) (tipLen*0.2)) 
+kock pt1 pt2 nPts tipLen rgen = samplePts kockPts nPts rgen
+    where nPts'   = ceiling $ log ((fromIntegral nPts)/5) / log 4 
+          toPair  = \v -> (v ^. _x, v ^. _y)
+          kockPts = map toPair $ kock' (uncurry V2 pt1) (uncurry V2 pt2) nPts' tipLen
 
 ---   ---
 lerpShots   t (shotx, shoty) = draw $ lerpPts t (map twoDim shotx) (map twoDim shoty)
