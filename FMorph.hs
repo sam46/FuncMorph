@@ -12,7 +12,7 @@ module FMorph (
         project2D, scalePts, singlePoint,
         project3D, rotateX, rotateY, rotateZ,
         kock, regularKock, regular, polar,
-        samplePts,
+        samplePts, splitapart, plane,
         draw, drawShape, play
     ) where 
 
@@ -43,6 +43,10 @@ project3D points  = map (\(a, b)-> (a, b, 0.0)) points
 
 linspace num = map (/num) [0..num]
 linspace num = map (/num) [0..num]
+
+-- rectangular grid of nPts^2 points
+plane nPts = let ls = linspace nPts in [(x,y) | x <- ls, y <- ls]
+
 
 remap x a b c d             = fst $ unr2 $ 
                                 lerp ((x - a)/(b - a)) (r2 (d,0)) (r2 (c,0))
@@ -122,7 +126,15 @@ polar   t  = (cos t, sin t)
 -- equaly sperated points on a unit circle
 regular n  = take n $ map polar [0, tau / fromIntegral n .. ]
 
-          
+
+-- pull points apart
+splitapart  _            0 points = points
+splitapart  (gapX, gapY) n points =
+    splitapart (gapX/2, gapY/2) (n-1) (map (\(x,y) -> (x-gapX, y-gapY)) lower) ++
+    splitapart (gapX/2, gapY/2) (n-1) (map (\(x,y) -> (x+gapX, y+gapY)) upper)
+    where lower = (take (floor (fromIntegral (length points)/2)) points)
+          upper = (drop (floor (fromIntegral (length points)/2)) points)
+
 ---- Animation/Drawing  ----
 lerpShots   t (shotx, shoty) = draw $ lerpPts t (map twoDim shotx) (map twoDim shoty)
 mkScene speed shotPair = ((pure $ (flip lerpShots) shotPair) <*> stretch (baseSpeed*speed) ui)
@@ -139,7 +151,7 @@ instance TwoDim ((,,) a a) a where
 
 
 -- make a Digaram from a shot where a shot is a list of points (i.e. [(x,y)] or [(x,y,z)]) 
-drawShape ptShape points  = atPoints (map p2 points) $ repeat ptShape
+drawShape ptShape points  = atPoints (map (p2.twoDim) points) $ repeat ptShape
 draw                      = drawShape singlePoint . map twoDim
 
 getShots  xs = map fst xs
