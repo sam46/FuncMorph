@@ -1,0 +1,16 @@
+license: MIT
+license-file: LICENSE
+extra-source-files:
+  - README.md
+
+dependencies:
+  - base >=4.7 && <5
+  - active
+  - diagrams-cairo
+  - diagrams-lib
+  - ihaskell
+  - random
+  - random-shuffle
+
+library:
+  source-dirs: src
